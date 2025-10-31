@@ -66,6 +66,10 @@
 
 - **集成测试未配置外部环境变量导致大面积失败（当前报错）**：`integration` 作业在默认环境下未设置 `BROWSER_URL`/`BENCHMARK_URL`，但 `test_benchmark` 与所有 `test_captchas[...]` 在缺少兜底跳过逻辑时仍尝试 `p.chromium.connect(BROWSER_URL)`，触发 `ws_endpoint: expected string, got undefined` 并导致 27 个用例失败。该问题属于回归：此前建议的 `pytest.skip(...)` 兜底被移除，导致集成测试在未配置外部依赖时不再自动跳过。
 
+- **Benchmark 服务引用不存在的模块导致 Gunicorn 无法启动（当前报错）**：`benchmark/server.py` 在导入阶段执行 `from apis.arkose import arkose`、`from apis.lemin import lemin`、`from apis.tencent import tencent`、`from apis.yandex import yandex`，但仓库仅包含 `benchmark/apis/{amazon,baidu,botdetect,geetest,hcaptcha,mtcaptcha,recaptchav2}`，缺少上述四个提供方目录与蓝图。Gunicorn 在加载 WSGI 应用时抛出 `ModuleNotFoundError: No module named 'apis.arkose'`，导致 worker 无法启动、容器健康检查失败、CI 集成作业中止。
+
+- **测试样本与可用路由不一致**：`halligan/samples.py` 中包含 `arkose/*`、`lemin`、`tencent`、`yandex/*` 等样本，但 Benchmark 实际未提供对应路由，`test_captchas` 在访问这些端点时将得到 404，缺少兜底跳过会引发集成测试失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

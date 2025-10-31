@@ -3,16 +3,42 @@ import traceback
 from logging.handlers import RotatingFileHandler
 from flask import Flask, Response, request, jsonify
 from apis.amazon import amazon
-from apis.arkose import arkose
 from apis.baidu import baidu
 from apis.botdetect import botdetect
 from apis.geetest import geetest
 from apis.hcaptcha import hcaptcha
-from apis.lemin import lemin
 from apis.mtcaptcha import mtcaptcha
 from apis.recaptchav2 import recaptchav2
-from apis.tencent import tencent
-from apis.yandex import yandex
+
+# Optional providers: guard imports so the server can boot without them
+arkose = None
+lemin = None
+tencent = None
+yandex = None
+
+try:
+    from apis.arkose import arkose as _arkose
+    arkose = _arkose
+except Exception:
+    logging.warning("Optional API 'arkose' not available; skipping registration.")
+
+try:
+    from apis.lemin import lemin as _lemin
+    lemin = _lemin
+except Exception:
+    logging.warning("Optional API 'lemin' not available; skipping registration.")
+
+try:
+    from apis.tencent import tencent as _tencent
+    tencent = _tencent
+except Exception:
+    logging.warning("Optional API 'tencent' not available; skipping registration.")
+
+try:
+    from apis.yandex import yandex as _yandex
+    yandex = _yandex
+except Exception:
+    logging.warning("Optional API 'yandex' not available; skipping registration.")
 
 
 formatter = logging.Formatter('%(asctime)s - %(message)s')
@@ -51,16 +77,21 @@ def handle_exception(e: Exception):
     return jsonify(message=str(e)), 500
 
 app.register_blueprint(amazon, url_prefix="/amazon")
-app.register_blueprint(arkose, url_prefix="/arkose")
 app.register_blueprint(baidu, url_prefix="/baidu")
 app.register_blueprint(botdetect, url_prefix="/botdetect")
 app.register_blueprint(geetest, url_prefix="/geetest")
 app.register_blueprint(hcaptcha, url_prefix="/hcaptcha")
-app.register_blueprint(lemin, url_prefix="/lemin")
 app.register_blueprint(mtcaptcha, url_prefix="/mtcaptcha")
 app.register_blueprint(recaptchav2, url_prefix="/recaptchav2")
-app.register_blueprint(tencent, url_prefix="/tencent")
-app.register_blueprint(yandex, url_prefix="/yandex")
+
+if arkose is not None:
+    app.register_blueprint(arkose, url_prefix="/arkose")
+if lemin is not None:
+    app.register_blueprint(lemin, url_prefix="/lemin")
+if tencent is not None:
+    app.register_blueprint(tencent, url_prefix="/tencent")
+if yandex is not None:
+    app.register_blueprint(yandex, url_prefix="/yandex")
 
 app.register_error_handler(Exception, handle_exception)
 

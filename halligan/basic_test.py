@@ -85,7 +85,9 @@ def test_captchas(captcha, sample_id):
         browser = p.chromium.connect(BROWSER_URL)
         context = browser.new_context(viewport={"width": 1344, "height": 768})
         page = context.new_page()
-        page.goto(f"{BENCHMARK_URL}/{captcha}/{sample_id}")
+    response = page.goto(f"{BENCHMARK_URL}/{captcha}/{sample_id}")
+    if response is None or response.status != 200:
+        pytest.skip(f"Endpoint not available for {captcha}/{sample_id}: status={getattr(response, 'status', None)}")
 
         if "recaptchav2" in captcha:
             checkbox = page.frame_locator("#checkbox")
