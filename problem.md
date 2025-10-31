@@ -35,6 +35,10 @@
 
   因此 `install` 子命令将 `-p` 视为非法参数，导致作业失败。
 
+- **项目内 Makefile 同样存在 pixi 参数顺序错误**：`Makefile` 使用了 `pixi install -p ./halligan` 与多处 `pixi run -p ./halligan ...`，同样会触发 CLI 解析错误，导致本地开发者复现 CI 步骤时踩坑。
+
+- **CI 仍出现旧日志提示（原因是远端配置未更新）**：GitHub Actions 日志显示 `Run pixi install -p ./halligan`，表明远端工作流仍为旧版。需要同步更新工作流至使用 `working-directory: halligan` 或正确的 `pixi -p ./halligan ...` 形式。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

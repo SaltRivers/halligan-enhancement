@@ -32,6 +32,10 @@
 
 - **修正 pixi CLI 用法（全局参数置于子命令之前）**：将 `pixi install -p ./halligan`、`pixi run -p ./halligan ...` 改为 `pixi -p ./halligan install`、`pixi -p ./halligan run ...`。可选优化：在相关步骤上设置 `working-directory: halligan`，则可直接使用 `pixi install` 与 `pixi run ...`，减少参数重复。
 
+- **在 CI 中统一使用 `working-directory: halligan`**：对运行命令的步骤（安装、pre-commit、pytest）设置 `working-directory: halligan`，命令即简化为 `pixi install` 与 `pixi run ...`，同时将测试产物输出到 `halligan/test-results`（步骤内相对路径为 `test-results/`），减少 `-p/--project` 误用的概率。
+
+- **修复 Makefile 的 pixi 命令**：将 `Makefile` 中的 `pixi install -p ./halligan` 与 `pixi run -p ./halligan ...` 统一修正为 `pixi -p ./halligan install/run ...`，确保本地与 CI 使用一致且正确的 CLI 形式。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
