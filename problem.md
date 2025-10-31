@@ -55,6 +55,8 @@
 
 - **CI 预提交阶段出现 Pixi Manifest 警告（信息级别）**：`pixi run precommit` 前输出 `The feature 'cuda' is defined but not used in any environment.`。这是我们将 CUDA 依赖保留为“按需启用”的 `feature.cuda` 后，Pixi 的提示性告警，表示该特性未在任何命名环境中被引用。当前设计为避免 CI 在非 GPU 平台上误求解 GPU 依赖，因此告警可忽略，不影响功能或安装。
 
+- **pre-commit 在仓库根执行导致 Ruff 未读取正确配置（当前报错）**：`pre-commit run --all-files` 默认在仓库根运行，Ruff 对于 `examples/**`、`*.ipynb`、`benchmark/**` 等路径未能读取 `halligan/pyproject.toml` 中的 `exclude` 与 `per-file-ignores` 设置，因而在 CI 中对大量 notebook 与示例代码触发 `F821/F841/E501/F401` 报错；同时 `ruff-format`/`black`/`isort` 多次改写文件，第二次校验仍以 1 退出码失败，致使“Verify pre-commit is clean” 步骤失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

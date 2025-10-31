@@ -3,8 +3,9 @@ repos:
     rev: v0.6.9
     hooks:
       - id: ruff
-        args: ["--fix"]
+        args: ["--fix", "--config", "halligan/pyproject.toml"]
       - id: ruff-format
+        args: ["--config", "halligan/pyproject.toml"]
   - repo: https://github.com/psf/black
     rev: 24.10.0
     hooks:

@@ -43,6 +43,11 @@
 
 - **说明：Pixi 关于未使用特性的告警属预期行为**：保留 `feature.cuda` 为“按需启用”会导致 Pixi 输出 `The feature 'cuda' is defined but not used in any environment.` 的信息级告警。为避免再次跨平台求解 GPU 依赖，我们不将该特性绑定到任何命名环境；该告警不影响安装或运行，可忽略。
 
+- **让 Ruff 按正确配置与范围运行（修复 pre-commit 失败）**：
+  - 在 `.pre-commit-config.yaml` 中为 `ruff` 与 `ruff-format` 明确传入 `--config halligan/pyproject.toml`，确保在仓库根运行时也能读取到正确的配置（排除与豁免规则生效）。
+  - 调整 Ruff 设置：在 `halligan/pyproject.toml` 中将 `exclude` 扩展为 `examples/**`、`**/*.ipynb` 与 `halligan/cache/**`；同时在 `ignore` 中加入 `E501`（与 Black 共存时常见做法），保留 `**/__init__.py` 的 `F401` 豁免，避免对示例与缓存代码报错。
+  - CI 中仍采取“先修复、后校验”的两步法：第一次允许修改并忽略退出码，第二次严格校验，保证最终提交无差异且质量门禁通过。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。

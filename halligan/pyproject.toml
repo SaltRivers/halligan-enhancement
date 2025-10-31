@@ -51,11 +51,15 @@ target-version = ["py310", "py311", "py312"]
 [tool.ruff]
 line-length = 120
 target-version = "py310"
-exclude = ["examples/**"]
+exclude = [
+  "examples/**",
+  "**/*.ipynb",
+  "halligan/cache/**",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
-ignore = ["E701"]
+ignore = ["E701", "E501"]
 per-file-ignores = {"**/__init__.py" = ["F401"]}
 
 [tool.isort]
