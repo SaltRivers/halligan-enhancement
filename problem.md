@@ -74,6 +74,8 @@
 
 - **集成作业未可靠拉起 Benchmark 服务（当前报错）**：虽然工作流中使用 `docker compose up -d` 预期拉起 `benchmark` 与 `browser`，但在 Runner 上出现 `net::ERR_CONNECTION_REFUSED` 到 `http://127.0.0.1:3334/health` 以及所有 CAPTCHA 路由的错误，说明基准服务未正确监听宿主机端口或容器未存活。由于健康检查早于依赖安装，且失败时未输出足够的服务日志，排障困难，导致 29/30 用例全部连接拒绝而失败。
 
+- **浏览器健康检查方式错误（当前报错）**：CI 中对浏览器容器的探活使用了 `curl http://127.0.0.1:5000/ | grep 'playwright'` 的 HTTP 内容检查，但 `mcr.microsoft.com/playwright` 的 `run-server` 只暴露 WebSocket 端点（`ws://127.0.0.1:5000/`），根路径 HTTP 不返回标识内容，导致探活一致失败并报 `Browser not healthy`，容器日志却显示 `Listening on ws://0.0.0.0:5000/`。此外，导出的 `BROWSER_URL` 带有多余的查询参数 `?ws=1`，与实际端点不匹配，增加连接不确定性。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

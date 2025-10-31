@@ -75,9 +75,12 @@
   - 将集成作业中 `docker compose up -d` 改为仅启动浏览器容器：`docker compose up -d --build browser`。
   - 基准服务改为直接在 Pixi 环境下运行 `gunicorn`：在作业中安装 `benchmark/requirements.txt`（Flask、Gunicorn），设置 `PYTHONPATH=${{ github.workspace }}`，后台启动 `gunicorn --bind=0.0.0.0:3334 benchmark.server:app`。
   - 新增浏览器与基准服务的健康检查：
-    - 浏览器：轮询 `http://127.0.0.1:5000/` 至多 60 秒。
+    - 浏览器：以 TCP 级探活代替 HTTP 内容检查（`bash -c "</dev/tcp/127.0.0.1/5000"`），最多等待 60 次，避免对仅暴露 WebSocket 的 `run-server` 误判为不健康。
     - 基准：轮询 `http://127.0.0.1:3334/health` 至多 120 秒；失败时输出 `curl -v` 与 `/tmp/benchmark.out` 日志，便于排障。
   - 这样消除了容器内 Conda 环境与端口映射的不确定性，确保 `BENCHMARK_URL` 可用，避免 `net::ERR_CONNECTION_REFUSED`。
+
+- **纠正浏览器端点与环境变量**：
+  - 将 `BROWSER_URL` 修正为 `ws://127.0.0.1:5000/`，移除无必要的 `?ws=1` 参数，使 `p.chromium.connect(BROWSER_URL)` 与 `run-server` 的实际监听端点一致。
 
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 

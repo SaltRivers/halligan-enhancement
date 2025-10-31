@@ -140,18 +140,18 @@ jobs:
 
       - name: Export service endpoints
         run: |
-          echo "BROWSER_URL=ws://127.0.0.1:5000/?ws=1" >> $GITHUB_ENV
+          echo "BROWSER_URL=ws://127.0.0.1:5000/" >> $GITHUB_ENV
           echo "BENCHMARK_URL=http://127.0.0.1:3334" >> $GITHUB_ENV
 
       - name: Wait for browser health
         run: |
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:5000/ | grep -q 'playwright'; then
+          for i in {1..60}; do
+            if bash -c "</dev/tcp/127.0.0.1/5000" 2>/dev/null; then
               exit 0
             fi
             sleep 2
           done
-          echo "Browser not healthy" >&2
+          echo "Browser not healthy (TCP 5000 not accepting connections)" >&2
           docker compose logs browser || true
           exit 1
 
