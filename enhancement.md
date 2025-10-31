@@ -24,6 +24,8 @@
 - **执行脚本入口安全**：`halligan/execute.py` 重构为 `main()` 接口并加上 `if __name__ == "__main__"` 守卫，防止导入期间自动跑完所有样例；新增 `validate_environment()`，在执行前校验 `BROWSER_URL`、`BENCHMARK_URL`、`OPENAI_API_KEY` 的存在与格式并输出友好提示。
 - **CI 集成作业稳定化**：`.github/workflows/ci.yml` 的 `integration` 触发条件改为基于 push、PR 标签 (`run-integration`) 与手动触发，移除导致表达式异常的 `join(github.event.pull_request.changed_files, ',')` 写法，并通过 `dorny/paths-filter` 精准识别关键目录改动，仅在必要时执行集成测试；工作流已针对 `SaltRivers/halligan-enhancement` 仓库配置，便于后续远程复用。
 
+- **修复 Pixi 设置与缓存失败**：在 CI 的 `setup-pixi` 步骤中显式指定 `manifest-path: halligan/pyproject.toml`，使动作在 `halligan/` 目录下解析 `pixi.lock` 并建立缓存，避免默认在仓库根查找导致的 `ENOENT: open 'pixi.lock'` 与清理阶段 `lstat '.pixi'` 错误。
+
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
 
 - 引入 `pre-commit` 钩子与 CI 质量门禁（格式化、lint、类型检查、单元测试）。
