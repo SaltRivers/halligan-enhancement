@@ -57,6 +57,11 @@
 
 - **pre-commit 在验证阶段仍报告“文件被修改”（当前报错）**：我们同时启用了 `ruff-format` 与 `black` 两个 Python 格式化器，且 `isort` 排在 `black` 之后。第一次修复阶段中，`isort` 在 `black` 之后改动了 import，导致第二次“验证”再运行时 `black`/`ruff-format` 继续改写文件，从而让“Verify pre-commit is clean” 失败。根因是“重复格式化器 + 错误的钩子顺序”引发的格式化回摆循环，而非真实语法/风格错误。
 
+- **单元测试包含对外部依赖的强依赖用例（当前报错）**：在“Run unit tests with JUnit” 阶段，`basic_test.py::test_browser` 与 `basic_test.py::test_halligan` 失败：
+  - `test_browser` 依赖 `BROWSER_URL` 与容器化 Playwright 浏览器，CI 单元测试环境未提供，报错 `ws_endpoint: expected string, got undefined`。
+  - `test_halligan` 导入 `from halligan.models import CLIP, Segmenter, Detector`，而当前仓库的 `halligan/models/__init__.py` 为空，导致 `ImportError: cannot import name 'CLIP'`。
+  - 这两项未标记为 `@pytest.mark.integration` 且缺少环境/依赖存在性的兜底跳过逻辑，在 `-m 'not integration'` 的单元测试任务中仍被执行，导致 CI 失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

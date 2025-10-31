@@ -53,6 +53,11 @@
   - 调整钩子执行顺序为：`ruff --fix` → `isort` → `black`（将 `isort` 放在 `black` 之前），避免第二次验证时再次触发格式化。
   - 同步 `pixi` 的 `format` 任务为 `isort . && black .`，与钩子一致，杜绝风格工具之间的冲突。
 
+- **稳定单元测试（移除对外部依赖的隐式要求）**：
+  - 将 `basic_test.py::test_browser` 与 `basic_test.py::test_halligan` 标记为 `@pytest.mark.integration`，避免在 `-m 'not integration'` 的单元测试任务中执行。
+  - 为 `test_browser` 增加兜底：当 `BROWSER_URL` 未设置时使用 `pytest.skip(...)` 跳过。
+  - 为 `test_halligan` 增加兜底：当无法导入 `CLIP/Segmenter/Detector` 或缺失 `OPENAI_API_KEY` 时跳过，用例仅在具备完整依赖与密钥的集成环境运行。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。

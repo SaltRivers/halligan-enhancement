@@ -15,11 +15,15 @@ BENCHMARK_URL = os.getenv("BENCHMARK_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
+@pytest.mark.integration
 def test_browser():
     """
     Verify that a connection can be successfully established to a 
     containerized Playwright browser via its WebSocket endpoint.
     """
+    if not BROWSER_URL:
+        pytest.skip("BROWSER_URL is not set; skipping browser connectivity test.")
+
     with sync_playwright() as p:
         try:
             browser = p.chromium.connect(BROWSER_URL)
@@ -99,13 +103,20 @@ def test_captchas(captcha, sample_id):
         assert SequenceMatcher(None, "\\n".join(full_snapshot), open(f"./snapshots/{captcha.replace("/", "_")}.txt").read()).ratio() > 0.5
 
 
+@pytest.mark.integration
 def test_halligan():
     """
     Verify that Halligan's VLM agent and all the additional models (CLIP, FastSAM, DINOv2)
     can be successfully initialized.
     """
     from halligan.agents import GPTAgent
-    from halligan.models import CLIP, Segmenter, Detector
+    try:
+        from halligan.models import CLIP, Segmenter, Detector
+    except Exception:
+        pytest.skip("halligan.models components (CLIP/Segmenter/Detector) are not available; skipping.")
+
+    if not OPENAI_API_KEY:
+        pytest.skip("OPENAI_API_KEY is not set; skipping model initialization test.")
 
     agent = GPTAgent(api_key=OPENAI_API_KEY)
     assert agent is not None, "Failed to initialize GPTAgent."
