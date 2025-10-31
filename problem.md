@@ -39,6 +39,20 @@
 
 - **CI 仍出现旧日志提示（原因是远端配置未更新）**：GitHub Actions 日志显示 `Run pixi install -p ./halligan`，表明远端工作流仍为旧版。需要同步更新工作流至使用 `working-directory: halligan` 或正确的 `pixi -p ./halligan ...` 形式。
 
+- **Pixi 解算跨平台环境导致 `faiss-gpu` 在 `osx-arm64` 上失败（当前报错）**：`halligan/pyproject.toml` 在 `[tool.pixi.workspace]` 中声明了多平台（含 `osx-arm64`），并定义了环境 `cuda = ["cuda"]`。`pixi install` 会尝试为所有声明的环境与平台求解，哪怕 CI 正在运行 CPU 安装步骤。由于 `faiss-gpu>=1.9.0,<2` 在 `osx-arm64` 无可用候选，导致安装失败，错误如下：
+
+  ```
+  Run pixi install
+  Error:   × failed to solve requirements of environment 'cuda' for platform 'osx-arm64'
+    ├─▶   × failed to solve the environment
+
+    ╰─▶ Cannot solve the request because of: No candidates were found for faiss-gpu >=1.9.0,<2.
+
+  Error: Process completed with exit code 1.
+  ```
+
+  根因：项目存在名为 `cuda` 的环境且工作空间平台包含 `osx-arm64`，使得 Pixi 在 CI 的 CPU 安装阶段也会对 `cuda@osx-arm64` 进行求解，从而命中 `faiss-gpu` 的不可用平台。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

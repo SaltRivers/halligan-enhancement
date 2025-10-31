@@ -42,8 +42,7 @@ system-requirements = {cuda = "12.1"}
 faiss-gpu = ">=1.9.0,<2"
 pytorch-cuda = "==12.1"
 
-[tool.pixi.environments]
-cuda = ["cuda"] 
+ 
 
 [tool.black]
 line-length = 100

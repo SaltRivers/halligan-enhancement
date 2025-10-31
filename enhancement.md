@@ -36,6 +36,11 @@
 
 - **修复 Makefile 的 pixi 命令**：将 `Makefile` 中的 `pixi install -p ./halligan` 与 `pixi run -p ./halligan ...` 统一修正为 `pixi -p ./halligan install/run ...`，确保本地与 CI 使用一致且正确的 CLI 形式。
 
+- **避免 Pixi 在不支持平台上解算 CUDA 环境**：移除了 `pyproject.toml` 中的 `cuda` 命名环境（`[tool.pixi.environments] cuda = ["cuda"]`），仅保留可选特性 `feature.cuda`。这样 `pixi install` 在 CI 的 CPU 步骤不会跨平台尝试求解 `cuda@osx-arm64`，从而规避 `faiss-gpu` 在 `osx-arm64` 无候选导致的失败。需要 GPU 的用户可按需启用：
+
+  - 本地/自托管 GPU：`pixi -p ./halligan install --feature cuda`（建议仅在 `linux-64` 且具备 CUDA 12.1 驱动环境下使用）。
+  - 若未来需要专用环境，可改为为 `cuda` 环境显式限定 `platforms=["linux-64"]` 再启用，但默认不在仓库中保留该环境以避免 CI 误解算。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
