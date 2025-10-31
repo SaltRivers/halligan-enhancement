@@ -89,6 +89,9 @@
   
   根因：`gunicorn` 不支持 Windows/在 conda-forge 上无 `win-64` 构建；一旦出现在“默认环境”的通用依赖中，求解会在 Windows 平台上必然失败。
 
+- **Waitress 启动失败：`Bad module 'benchmark.server'`（当前报错）**：集成作业中通过 `waitress-serve --listen=0.0.0.0:3334 benchmark.server:app` 启动基准服务，但 `benchmark/server.py` 使用了顶层导入 `from apis.* import ...`。在 CI 下 `PYTHONPATH` 指向仓库根目录，仅存在包 `benchmark`，不存在顶层包 `apis`，导致 `ModuleNotFoundError: No module named 'apis'`，Waitress 报告无法导入模块，服务未启动，`/health` 探活持续连接拒绝。
+  - 根因：包内模块未使用包相对/绝对导入，破坏了包结构隔离；当以 `benchmark.server` 作为包模块被导入时，`from apis...` 无法解析到 `benchmark/apis/...`。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

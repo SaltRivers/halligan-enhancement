@@ -2,13 +2,13 @@ import logging
 import traceback
 from logging.handlers import RotatingFileHandler
 from flask import Flask, Response, request, jsonify
-from apis.amazon import amazon
-from apis.baidu import baidu
-from apis.botdetect import botdetect
-from apis.geetest import geetest
-from apis.hcaptcha import hcaptcha
-from apis.mtcaptcha import mtcaptcha
-from apis.recaptchav2 import recaptchav2
+from .apis.amazon import amazon
+from .apis.baidu import baidu
+from .apis.botdetect import botdetect
+from .apis.geetest import geetest
+from .apis.hcaptcha import hcaptcha
+from .apis.mtcaptcha import mtcaptcha
+from .apis.recaptchav2 import recaptchav2
 
 # Optional providers: guard imports so the server can boot without them
 arkose = None
@@ -17,25 +17,25 @@ tencent = None
 yandex = None
 
 try:
-    from apis.arkose import arkose as _arkose
+    from .apis.arkose import arkose as _arkose
     arkose = _arkose
 except Exception:
     logging.warning("Optional API 'arkose' not available; skipping registration.")
 
 try:
-    from apis.lemin import lemin as _lemin
+    from .apis.lemin import lemin as _lemin
     lemin = _lemin
 except Exception:
     logging.warning("Optional API 'lemin' not available; skipping registration.")
 
 try:
-    from apis.tencent import tencent as _tencent
+    from .apis.tencent import tencent as _tencent
     tencent = _tencent
 except Exception:
     logging.warning("Optional API 'tencent' not available; skipping registration.")
 
 try:
-    from apis.yandex import yandex as _yandex
+    from .apis.yandex import yandex as _yandex
     yandex = _yandex
 except Exception:
     logging.warning("Optional API 'yandex' not available; skipping registration.")

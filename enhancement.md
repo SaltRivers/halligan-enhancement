@@ -61,7 +61,7 @@
   - 为所有浏览器/基准依赖的集成用例恢复环境变量兜底：在 `test_benchmark` 与 `test_captchas` 开头加入 `if not BROWSER_URL or not BENCHMARK_URL: pytest.skip(...)`，当 CI 未配置所需外部服务时，集成用例将被跳过而非失败；当提供环境后自动恢复执行。
 
 - **Benchmark 可选蓝图按需加载（修复模块缺失导致的启动失败）**：
-  - 将 `benchmark/server.py` 中对 `arkose`、`lemin`、`tencent`、`yandex` 的导入改为可选导入（`try/except`），仅在模块存在时注册蓝图；缺失时记录告警并跳过注册，保证 Gunicorn 能顺利启动。
+  - 将 `benchmark/server.py` 中对 `arkose`、`lemin`、`tencent`、`yandex` 的导入改为可选导入（`try/except`），仅在模块存在时注册蓝图；缺失时记录告警并跳过注册，保证服务端可顺利启动。
   - 按原有方式正常注册已存在的蓝图（`amazon`、`baidu`、`botdetect`、`geetest`、`hcaptcha`、`mtcaptcha`、`recaptchav2`）。
 
 - **集成测试与路由实际可用性对齐**：
@@ -86,6 +86,11 @@
   - 在 `halligan/pyproject.toml` 的 `[tool.pixi.dependencies]` 中新增 `flask>=3.0.2,<3.1` 与 `waitress>=2.1.2,<3`（替代不支持 Windows 的 `gunicorn`），使运行基准服务所需依赖由 Pixi 统一管理、可在 `linux-64`/`osx-64`/`osx-arm64`/`win-64` 解析。
   - 从 CI 工作流中移除 `pixi run python -m pip install -r ../benchmark/requirements.txt` 步骤；直接使用 `pixi run waitress-serve --listen=0.0.0.0:3334 benchmark.server:app` 启动服务。
   - 这样既避免了 Pixi 环境内缺少 `pip` 导致的安装失败，又消除了 `gunicorn` 在 `win-64` 无候选引起的求解失败，统一单一包管理器与缓存。
+
+- **修复包导入路径，确保 Waitress 能加载 WSGI 应用（新）**：
+  - 将 `benchmark/server.py` 内所有 `from apis.*` 改为包相对导入 `from .apis.*`；这样当以 `benchmark.server:app` 被导入时，Python 能正确解析到 `benchmark/apis/...`。
+  - 保留并巩固可选蓝图的 `try/except` 导入逻辑，未提供的提供方模块将被跳过注册但不会阻塞服务启动。
+  - 结果：`waitress-serve ... benchmark.server:app` 能正确导入模块，`/health` 探活可通过，集成测试不再因“连接拒绝”而失败。
 
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
