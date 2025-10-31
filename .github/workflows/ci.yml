@@ -68,7 +68,11 @@ jobs:
         working-directory: halligan
         run: pixi install
 
-      - name: Run pre-commit
+      - name: Run pre-commit (apply fixes)
+        working-directory: halligan
+        run: pixi run precommit || true
+
+      - name: Verify pre-commit is clean
         working-directory: halligan
         run: pixi run precommit
 

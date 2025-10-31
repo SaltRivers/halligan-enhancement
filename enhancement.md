@@ -41,6 +41,8 @@
   - 本地/自托管 GPU：`pixi -p ./halligan install --feature cuda`（建议仅在 `linux-64` 且具备 CUDA 12.1 驱动环境下使用）。
   - 若未来需要专用环境，可改为为 `cuda` 环境显式限定 `platforms=["linux-64"]` 再启用，但默认不在仓库中保留该环境以避免 CI 误解算。
 
+- **说明：Pixi 关于未使用特性的告警属预期行为**：保留 `feature.cuda` 为“按需启用”会导致 Pixi 输出 `The feature 'cuda' is defined but not used in any environment.` 的信息级告警。为避免再次跨平台求解 GPU 依赖，我们不将该特性绑定到任何命名环境；该告警不影响安装或运行，可忽略。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
