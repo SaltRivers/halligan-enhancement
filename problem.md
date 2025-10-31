@@ -62,6 +62,8 @@
   - `test_halligan` 导入 `from halligan.models import CLIP, Segmenter, Detector`，而当前仓库的 `halligan/models/__init__.py` 为空，导致 `ImportError: cannot import name 'CLIP'`。
   - 这两项未标记为 `@pytest.mark.integration` 且缺少环境/依赖存在性的兜底跳过逻辑，在 `-m 'not integration'` 的单元测试任务中仍被执行，导致 CI 失败。
 
+- **CI 单元测试阶段全部用例被筛掉导致退出码 5（当前报错）**：工作流按 `-m 'not integration'` 运行单元测试，但 `halligan/basic_test.py` 中所有实际用例均带有 `@pytest.mark.integration` 标记（含参数化的 26 个 CAPTCHA 用例）。因此 PyTest 日志为 `29 deselected / 0 selected`，并以退出码 5 结束，导致步骤失败。根因：缺少至少 1 条不依赖外部服务的“单元级”用例作为保底集合。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

@@ -57,6 +57,7 @@
   - 将 `basic_test.py::test_browser` 与 `basic_test.py::test_halligan` 标记为 `@pytest.mark.integration`，避免在 `-m 'not integration'` 的单元测试任务中执行。
   - 为 `test_browser` 增加兜底：当 `BROWSER_URL` 未设置时使用 `pytest.skip(...)` 跳过。
   - 为 `test_halligan` 增加兜底：当无法导入 `CLIP/Segmenter/Detector` 或缺失 `OPENAI_API_KEY` 时跳过，用例仅在具备完整依赖与密钥的集成环境运行。
+  - 新增无外部依赖的单元级保底用例：`test_smoke_samples` 校验 `SAMPLES` 结构合法性，确保 `-m 'not integration'` 下至少执行 1 条测试，避免 PyTest 因 0 selected 返回退出码 5。
 
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 

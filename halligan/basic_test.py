@@ -15,6 +15,17 @@ BENCHMARK_URL = os.getenv("BENCHMARK_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
+def test_smoke_samples():
+    """
+    Lightweight unit smoke test that does not require external services.
+    Ensures `SAMPLES` is well-formed so the unit-test job always runs ≥1 test.
+    """
+    assert isinstance(SAMPLES, dict) and len(SAMPLES) > 0
+    for name, data in SAMPLES.items():
+        assert isinstance(name, str) and name
+        assert isinstance(data, dict) and "id" in data
+
+
 @pytest.mark.integration
 def test_browser():
     """
