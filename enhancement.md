@@ -3,13 +3,14 @@
 - **基准服务健壮化**：
   - `/health` 由空 200 改为返回 `{status: "ok"}` 的 JSON，便于脚本与探活。
   - `after_request` 对响应类型进行安全判断，使用 `get_json(silent=True)` 防御性解析；仅在存在 `solved` 字段时记录。
-  - 统一异常处理为 `logging.exception(e)`，保留完整堆栈，便于排错。
+  - 全局异常处理改为忽略 `HTTPException` 并仅对真正的未捕获异常 `logging.exception`，既保留堆栈又避免误把 404 等转成 500。
   - 日志改用 `RotatingFileHandler`，限制单文件大小并保留轮转，避免日志无限膨胀。
   - 运行默认 `debug=False`，防止在 CI/生产环境中暴露调试信息。
 
 - **测试稳定性与分层标记**：
   - `test_benchmark` 由断言 500 错误页改为访问 `/health`，断言 200 且 JSON `status==ok`，避免雪花失败。
   - 为集成测试添加 `@pytest.mark.integration` 标记，区分与单元测试的执行策略。
+  - 新增 `test_captcha_endpoints_http` 裸发 GET 预验所有 `SAMPLES` 路径，Playwright 执行前即断言返回 200，让真实故障在 CI 中直接失败而不是被跳过。
 
 - **环境与开发工具**：
   - 放宽 Python 版本要求到 `>=3.10,<3.13`，提升跨平台与可移植性。

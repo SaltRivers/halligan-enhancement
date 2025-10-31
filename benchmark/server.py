@@ -1,7 +1,8 @@
 import logging
-import traceback
 from logging.handlers import RotatingFileHandler
-from flask import Flask, Response, request, jsonify
+
+from flask import Flask, Response, jsonify, request
+from werkzeug.exceptions import HTTPException
 from .apis.amazon import amazon
 from .apis.baidu import baidu
 from .apis.botdetect import botdetect
@@ -73,7 +74,10 @@ def after_request(response: Response):
     return response
 
 def handle_exception(e: Exception):
-    logging.exception(e)
+    if isinstance(e, HTTPException):
+        return e
+
+    logging.exception("Unhandled exception while processing request")
     return jsonify(message=str(e)), 500
 
 app.register_blueprint(amazon, url_prefix="/amazon")

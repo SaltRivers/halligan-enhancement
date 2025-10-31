@@ -1,5 +1,7 @@
 import os
 from difflib import SequenceMatcher
+from urllib import error as urllib_error
+from urllib import request as urllib_request
 
 import pytest
 from dotenv import load_dotenv
@@ -67,6 +69,36 @@ def test_benchmark():
 
 
 test_captcha_params = [(name, data["id"]) for name, data in SAMPLES.items()]
+
+
+@pytest.mark.integration
+def test_captcha_endpoints_http():
+    """Ensure each CAPTCHA endpoint responds with HTTP 200 before UI checks."""
+
+    if not BENCHMARK_URL:
+        pytest.skip("BENCHMARK_URL not set; skipping endpoint availability check.")
+
+    failures: list[str] = []
+    for captcha, data in SAMPLES.items():
+        sample_id = data["id"]
+        url = f"{BENCHMARK_URL}/{captcha}/{sample_id}"
+        try:
+            with urllib_request.urlopen(url, timeout=15) as resp:
+                status = resp.getcode()
+        except urllib_error.HTTPError as err:
+            status = err.code
+            snippet = err.read().decode("utf-8", "ignore")[:200]
+            failures.append(f"{captcha}/{sample_id} -> {status}: {snippet}")
+            continue
+        except urllib_error.URLError as err:
+            pytest.fail(f"Failed to reach {url}: {err}")
+
+        if status != 200:
+            failures.append(f"{captcha}/{sample_id} -> {status}")
+
+    if failures:
+        pytest.fail("\n".join(failures))
+
 
 @pytest.mark.integration
 @pytest.mark.parametrize("captcha, sample_id", test_captcha_params)

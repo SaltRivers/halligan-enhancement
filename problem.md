@@ -3,6 +3,7 @@
 - **环境与平台强绑定，导致可移植性差**：`halligan/pyproject.toml` 将 `requires-python` 固定为 `==3.12.4`，Pixi 仅声明 `linux-64` 平台；依赖中包含 `pytorch==2.3.1`、`torchvision==0.18.1`、`faiss-gpu>=1.9.0` 等重依赖且未提供 CPU 替代或平台条件，给 macOS/Windows 用户和无 GPU 环境带来安装与运行障碍。
 - **环境管理割裂、文档路径跨目录，开发者上手成本高**：根目录 README 指导分别进入 `benchmark/`（Docker/Conda）与 `halligan/`（Pixi）两套体系，缺少顶层一键编排（如顶层 `docker compose` 或 Makefile），新同学很难正确拉起端到端环境。
 - **测试不稳定且与外部服务强耦合**：`halligan/basic_test.py` 将基准服务期望返回码断言为 500 且依赖 UI 渲染与 `time` 等待、ARIA 快照相似度（`SequenceMatcher`），对运行时序、渲染差异高度敏感；未区分单元/集成/E2E 层次，CI 中容易出现雪花失败（flaky）。
+- **验证码端点 500 被误判为“跳过”导致真故障被吞**：`test_captchas` 在首个 `page.goto` 非 200 时直接 `pytest.skip`，而 `benchmark/server.py` 将所有异常统一包装成 500（包括蓝图缺失、404、JSON 解析失败）。一旦 Arkose/Lemin/Tencent/Yandex 等可选路由加载失败，Playwright 测试只记录为 “Endpoint not available... status=500” 的跳过项，CI 结果仍为绿色，但端点长期不可用。
 - **基准服务错误处理与日志实现存在缺陷**：`benchmark/server.py` 的 `after_request` 直接访问 `response.json`，在某些响应类型上可能抛错；`handle_exception` 使用 `logging.info(traceback.print_exc())` 实际记录为 `None`；默认 `debug=True` 不适合生产/CI；日志文件未滚动，长期运行会膨胀。
 - **缺乏统一的代码质量守门**：仓库未见格式化/静态检查/类型检查配置（如 Black/ Ruff/ Mypy），没有 pre-commit 与 CI 质量门禁，长期易积累风格不一致与潜在缺陷。
 - **核心脚本导入即触发外部调用，缺少运行入口控制**：`halligan/execute.py` 在模块导入阶段直接遍历 `SAMPLES` 并连接远程浏览器/基准服务，任何单元测试或工具模块若意外导入该文件都会发起真实网络操作并写日志文件，既破坏测试隔离，也可能耗尽配额或泄露密钥。
