@@ -48,6 +48,11 @@
   - 调整 Ruff 设置：在 `halligan/pyproject.toml` 中将 `exclude` 扩展为 `examples/**`、`**/*.ipynb` 与 `halligan/cache/**`；同时在 `ignore` 中加入 `E501`（与 Black 共存时常见做法），保留 `**/__init__.py` 的 `F401` 豁免，避免对示例与缓存代码报错。
   - CI 中仍采取“先修复、后校验”的两步法：第一次允许修改并忽略退出码，第二次严格校验，保证最终提交无差异且质量门禁通过。
 
+- **消除验证阶段的格式化回摆（修复“Verify pre-commit is clean” 失败）**：
+  - 移除重复的 `ruff-format` 钩子，仅保留一个 Python 格式化器（Black）。
+  - 调整钩子执行顺序为：`ruff --fix` → `isort` → `black`（将 `isort` 放在 `black` 之前），避免第二次验证时再次触发格式化。
+  - 同步 `pixi` 的 `format` 任务为 `isort . && black .`，与钩子一致，杜绝风格工具之间的冲突。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。

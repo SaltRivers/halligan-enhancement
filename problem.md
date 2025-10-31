@@ -55,7 +55,7 @@
 
 - **CI 预提交阶段出现 Pixi Manifest 警告（信息级别）**：`pixi run precommit` 前输出 `The feature 'cuda' is defined but not used in any environment.`。这是我们将 CUDA 依赖保留为“按需启用”的 `feature.cuda` 后，Pixi 的提示性告警，表示该特性未在任何命名环境中被引用。当前设计为避免 CI 在非 GPU 平台上误求解 GPU 依赖，因此告警可忽略，不影响功能或安装。
 
-- **pre-commit 在仓库根执行导致 Ruff 未读取正确配置（当前报错）**：`pre-commit run --all-files` 默认在仓库根运行，Ruff 对于 `examples/**`、`*.ipynb`、`benchmark/**` 等路径未能读取 `halligan/pyproject.toml` 中的 `exclude` 与 `per-file-ignores` 设置，因而在 CI 中对大量 notebook 与示例代码触发 `F821/F841/E501/F401` 报错；同时 `ruff-format`/`black`/`isort` 多次改写文件，第二次校验仍以 1 退出码失败，致使“Verify pre-commit is clean” 步骤失败。
+- **pre-commit 在验证阶段仍报告“文件被修改”（当前报错）**：我们同时启用了 `ruff-format` 与 `black` 两个 Python 格式化器，且 `isort` 排在 `black` 之后。第一次修复阶段中，`isort` 在 `black` 之后改动了 import，导致第二次“验证”再运行时 `black`/`ruff-format` 继续改写文件，从而让“Verify pre-commit is clean” 失败。根因是“重复格式化器 + 错误的钩子顺序”引发的格式化回摆循环，而非真实语法/风格错误。
 
 ### 其他关键问题（简述）
 
