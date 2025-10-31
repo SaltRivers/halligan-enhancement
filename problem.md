@@ -78,6 +78,8 @@
 
 - **Pixi 环境激活方式错误导致找不到激活脚本（当前报错）**：在集成作业中通过 `. halligan/.pixi/envs/default/bin/activate` 试图“激活” Pixi 环境以安装 `benchmark/requirements.txt` 并启动 Gunicorn。Pixi 的环境不是 Python `virtualenv`，不会提供该路径下的 `bin/activate` 脚本，因此步骤报错 `No such file or directory` 并中止。正确做法是使用 `pixi run <cmd>` 在 Pixi 环境中执行命令，配合步骤的 `working-directory: halligan` 保证命令在项目环境内运行。
 
+- **Pixi 环境内未包含 pip，导致运行时安装失败（当前报错）**：改用 `pixi run python -m pip install -r ../benchmark/requirements.txt` 后，CI 报错 `/halligan/.pixi/envs/default/bin/python: No module named pip`。根因：Pixi（基于 Conda）默认不自动安装 `pip`，除非将其声明为依赖。对 CI 来说，在 Pixi 环境内临时用 `pip` 安装运行时依赖是脆弱方案：既要求额外增补 `pip` 包，又引入与 Pixi 解析/缓存体系并行的第二套包管理，增加不确定性。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。
