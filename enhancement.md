@@ -71,6 +71,14 @@
   - 将 `basic_test.py::test_captchas` 的页面导航与交互全部置于 `with sync_playwright()` 作用域内，修正缩进错误，确保 Playwright 未被提前关闭时再进行 `goto()` 与后续操作。
   - 为该用例增加 `finally: browser.close()`，在任何情况下都正确释放浏览器资源，避免资源泄漏与后续用例串扰。
 
+- **让集成作业稳定地拉起服务，消除连接拒绝**：
+  - 将集成作业中 `docker compose up -d` 改为仅启动浏览器容器：`docker compose up -d --build browser`。
+  - 基准服务改为直接在 Pixi 环境下运行 `gunicorn`：在作业中安装 `benchmark/requirements.txt`（Flask、Gunicorn），设置 `PYTHONPATH=${{ github.workspace }}`，后台启动 `gunicorn --bind=0.0.0.0:3334 benchmark.server:app`。
+  - 新增浏览器与基准服务的健康检查：
+    - 浏览器：轮询 `http://127.0.0.1:5000/` 至多 60 秒。
+    - 基准：轮询 `http://127.0.0.1:3334/health` 至多 120 秒；失败时输出 `curl -v` 与 `/tmp/benchmark.out` 日志，便于排障。
+  - 这样消除了容器内 Conda 环境与端口映射的不确定性，确保 `BENCHMARK_URL` 可用，避免 `net::ERR_CONNECTION_REFUSED`。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。

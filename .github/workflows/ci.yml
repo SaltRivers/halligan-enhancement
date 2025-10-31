@@ -132,27 +132,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build and start services
+      - name: Start Playwright browser container only
         run: |
-          docker compose up -d --build
-          # Allow services to warm up
-          sleep 10
+          docker compose up -d --build browser
+          # Allow browser to warm up
+          sleep 5
 
       - name: Export service endpoints
         run: |
           echo "BROWSER_URL=ws://127.0.0.1:5000/?ws=1" >> $GITHUB_ENV
           echo "BENCHMARK_URL=http://127.0.0.1:3334" >> $GITHUB_ENV
 
-      - name: Wait for benchmark health
+      - name: Wait for browser health
         run: |
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:3334/health | grep -q '"status":"ok"'; then
+            if curl -fsS http://127.0.0.1:5000/ | grep -q 'playwright'; then
               exit 0
             fi
             sleep 2
           done
-          echo "Benchmark not healthy" >&2
-          docker compose logs benchmark || true
+          echo "Browser not healthy" >&2
+          docker compose logs browser || true
           exit 1
 
       - name: Set up Pixi (with cache)
@@ -173,6 +173,32 @@ jobs:
       - name: Install deps (CPU)
         working-directory: halligan
         run: pixi install
+
+      - name: Install benchmark runtime deps into Pixi env
+        run: |
+          . halligan/.pixi/envs/default/bin/activate
+          python -m pip install -r benchmark/requirements.txt
+
+      - name: Start benchmark server (gunicorn)
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          . halligan/.pixi/envs/default/bin/activate
+          nohup gunicorn --bind=0.0.0.0:3334 --threads=10 benchmark.server:app >/tmp/benchmark.out 2>&1 &
+          echo $! > /tmp/benchmark.pid
+
+      - name: Wait for benchmark health
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3334/health | grep -q '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Benchmark not healthy" >&2
+          curl -v http://127.0.0.1:3334/health || true
+          if [ -f /tmp/benchmark.out ]; then tail -200 /tmp/benchmark.out || true; fi
+          exit 1
 
       - name: Run integration tests
         working-directory: halligan

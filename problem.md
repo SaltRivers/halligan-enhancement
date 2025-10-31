@@ -72,6 +72,8 @@
 
 - **Playwright 事件循环提前关闭（当前报错）**：`basic_test.py::test_captchas` 中 `page.goto(...)` 与后续页面交互在 `with sync_playwright() as p:` 代码块之外执行（缩进错误），导致上下文提前退出并关闭 Playwright 的同步事件循环，运行时在 `goto()` 抛出 `Error: Event loop is closed! Is Playwright already stopped?`。根因是测试生命周期管理不当：在关闭 Playwright 后仍使用其对象。
 
+- **集成作业未可靠拉起 Benchmark 服务（当前报错）**：虽然工作流中使用 `docker compose up -d` 预期拉起 `benchmark` 与 `browser`，但在 Runner 上出现 `net::ERR_CONNECTION_REFUSED` 到 `http://127.0.0.1:3334/health` 以及所有 CAPTCHA 路由的错误，说明基准服务未正确监听宿主机端口或容器未存活。由于健康检查早于依赖安装，且失败时未输出足够的服务日志，排障困难，导致 29/30 用例全部连接拒绝而失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。
