@@ -92,6 +92,9 @@
 - **Waitress 启动失败：`Bad module 'benchmark.server'`（当前报错）**：集成作业中通过 `waitress-serve --listen=0.0.0.0:3334 benchmark.server:app` 启动基准服务，但 `benchmark/server.py` 使用了顶层导入 `from apis.* import ...`。在 CI 下 `PYTHONPATH` 指向仓库根目录，仅存在包 `benchmark`，不存在顶层包 `apis`，导致 `ModuleNotFoundError: No module named 'apis'`，Waitress 报告无法导入模块，服务未启动，`/health` 探活持续连接拒绝。
   - 根因：包内模块未使用包相对/绝对导入，破坏了包结构隔离；当以 `benchmark.server` 作为包模块被导入时，`from apis...` 无法解析到 `benchmark/apis/...`。
 
+- **集成测试阶段对基准服务的跨步骤后台运行不稳定（当前报错）**：工作流在一个步骤中使用 `nohup pixi run waitress-serve ... &` 启动服务，并在后续步骤执行健康检查与测试。由于 GitHub Actions 对步骤边界的进程组管理，使用 `pixi run` 启动的子进程在步骤结束后可能被终止或会话分离不完全，导致后续测试访问 `http://127.0.0.1:3334/...` 出现 `net::ERR_CONNECTION_REFUSED`。该问题在日志中表现为健康检查未必失败，但测试阶段出现大面积连接拒绝。
+  - 根因：将服务作为后台进程跨步骤保活存在不确定性（会话/进程组/环境隔离），尤其是经由 `pixi run` 启动的进程。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

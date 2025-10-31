@@ -174,32 +174,41 @@ jobs:
         working-directory: halligan
         run: pixi install
 
-      - name: Start benchmark server (waitress)
+      - name: Start benchmark and run integration tests
         env:
           PYTHONPATH: ${{ github.workspace }}
         working-directory: halligan
         run: |
-          nohup pixi run waitress-serve --listen=0.0.0.0:3334 benchmark.server:app >/tmp/benchmark.out 2>&1 &
-          echo $! > /tmp/benchmark.pid
+          set -euo pipefail
+          # Start benchmark server in background, fully detached from this shell
+          (setsid pixi run waitress-serve --listen=127.0.0.1:3334 benchmark.server:app > /tmp/benchmark.out 2>&1 & echo $! > /tmp/benchmark.pid) || true
 
-      - name: Wait for benchmark health
-        run: |
-          for i in {1..60}; do
+          # Wait for benchmark health
+          for i in {1..90}; do
             if curl -fsS http://127.0.0.1:3334/health | grep -q '"status":"ok"'; then
-              exit 0
+              break
             fi
             sleep 2
           done
-          echo "Benchmark not healthy" >&2
-          curl -v http://127.0.0.1:3334/health || true
-          if [ -f /tmp/benchmark.out ]; then tail -200 /tmp/benchmark.out || true; fi
-          exit 1
 
-      - name: Run integration tests
-        working-directory: halligan
-        run: |
+          # Final health check with diagnostics
+          if ! curl -fsS http://127.0.0.1:3334/health | grep -q '"status":"ok"'; then
+            echo "Benchmark not healthy before tests" >&2
+            curl -v http://127.0.0.1:3334/health || true
+            if [ -f /tmp/benchmark.out ]; then tail -200 /tmp/benchmark.out || true; fi
+            exit 1
+          fi
+
+          # Run integration tests
           mkdir -p test-results
-          pixi run pytest -m integration --junitxml=test-results/junit-integration.xml -vv
+          pixi run pytest -m integration --junitxml=test-results/junit-integration.xml -vv || TEST_STATUS=$?
+
+          # Dump server logs for context on failure
+          if [ "${TEST_STATUS:-0}" != "0" ]; then
+            echo "Integration tests failed; tailing benchmark logs" >&2
+            if [ -f /tmp/benchmark.out ]; then tail -200 /tmp/benchmark.out || true; fi
+            exit "$TEST_STATUS"
+          fi
 
       - name: Check models dir exists (integration)
         id: models_dir_integ

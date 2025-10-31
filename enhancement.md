@@ -92,6 +92,10 @@
   - 保留并巩固可选蓝图的 `try/except` 导入逻辑，未提供的提供方模块将被跳过注册但不会阻塞服务启动。
   - 结果：`waitress-serve ... benchmark.server:app` 能正确导入模块，`/health` 探活可通过，集成测试不再因“连接拒绝”而失败。
 
+- **让基准服务在同一步骤内启动并运行集成测试（新）**：
+  - 将 CI 的 `Start benchmark server` 与 `Run integration tests` 合并为同一步骤执行，使用 `setsid pixi run waitress-serve --listen=127.0.0.1:3334 benchmark.server:app &` 启动并完全脱离当前会话，随后在同一步骤内轮询 `/health` 并立即运行 `pytest -m integration`。
+  - 这样避免了跨步骤后台进程在步骤边界被终止/会话丢失的问题，消除测试阶段的 `net::ERR_CONNECTION_REFUSED`；失败时自动输出 `/tmp/benchmark.out` 便于排障。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
