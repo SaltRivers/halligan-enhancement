@@ -58,10 +58,7 @@
   - 为 `test_browser` 增加兜底：当 `BROWSER_URL` 未设置时使用 `pytest.skip(...)` 跳过。
   - 为 `test_halligan` 增加兜底：当无法导入 `CLIP/Segmenter/Detector` 或缺失 `OPENAI_API_KEY` 时跳过，用例仅在具备完整依赖与密钥的集成环境运行。
   - 新增无外部依赖的单元级保底用例：`test_smoke_samples` 校验 `SAMPLES` 结构合法性，确保 `-m 'not integration'` 下至少执行 1 条测试，避免 PyTest 因 0 selected 返回退出码 5。
-
-- **为所有浏览器/基准依赖的集成用例增加环境变量兜底（新）**：
-  - 在 `test_benchmark` 与 `test_captchas` 开头加入 `if not BROWSER_URL or not BENCHMARK_URL: pytest.skip(...)`，当 CI 未配置所需外部服务时，集成用例将被跳过而非失败。
-  - 这样，集成作业在缺省环境下不会报错；当提供了 `BROWSER_URL`/`BENCHMARK_URL` 后，这些用例将自动恢复执行。
+  - 为所有浏览器/基准依赖的集成用例恢复环境变量兜底：在 `test_benchmark` 与 `test_captchas` 开头加入 `if not BROWSER_URL or not BENCHMARK_URL: pytest.skip(...)`，当 CI 未配置所需外部服务时，集成用例将被跳过而非失败；当提供环境后自动恢复执行。
 
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 

@@ -64,7 +64,7 @@
 
 - **CI 单元测试阶段全部用例被筛掉导致退出码 5（当前报错）**：工作流按 `-m 'not integration'` 运行单元测试，但 `halligan/basic_test.py` 中所有实际用例均带有 `@pytest.mark.integration` 标记（含参数化的 26 个 CAPTCHA 用例）。因此 PyTest 日志为 `29 deselected / 0 selected`，并以退出码 5 结束，导致步骤失败。根因：缺少至少 1 条不依赖外部服务的“单元级”用例作为保底集合。
 
-- **集成测试在未配置外部环境变量时仍尝试连接浏览器/基准服务（当前报错）**：在集成作业中，`pytest` 实际选择并运行了 `integration` 用例（共 29 条）。由于 CI 环境未设置 `BROWSER_URL` 与/或 `BENCHMARK_URL`，`playwright.chromium.connect(BROWSER_URL)` 抛出 `ws_endpoint: expected string, got undefined`，导致包括 `test_benchmark` 与所有 `test_captchas[...]` 在内的 27 条测试失败。根因：集成用例缺少对关键环境变量缺失时的跳过防护，仅 `test_browser` 做了兜底，其余场景未覆盖。
+- **集成测试未配置外部环境变量导致大面积失败（当前报错）**：`integration` 作业在默认环境下未设置 `BROWSER_URL`/`BENCHMARK_URL`，但 `test_benchmark` 与所有 `test_captchas[...]` 在缺少兜底跳过逻辑时仍尝试 `p.chromium.connect(BROWSER_URL)`，触发 `ws_endpoint: expected string, got undefined` 并导致 27 个用例失败。该问题属于回归：此前建议的 `pytest.skip(...)` 兜底被移除，导致集成测试在未配置外部依赖时不再自动跳过。
 
 ### 其他关键问题（简述）
 
