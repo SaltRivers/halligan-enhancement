@@ -174,12 +174,12 @@ jobs:
         working-directory: halligan
         run: pixi install
 
-      - name: Start benchmark server (gunicorn)
+      - name: Start benchmark server (waitress)
         env:
           PYTHONPATH: ${{ github.workspace }}
         working-directory: halligan
         run: |
-          nohup pixi run gunicorn --bind=0.0.0.0:3334 --threads=10 benchmark.server:app >/tmp/benchmark.out 2>&1 &
+          nohup pixi run waitress-serve --listen=0.0.0.0:3334 benchmark.server:app >/tmp/benchmark.out 2>&1 &
           echo $! > /tmp/benchmark.pid
 
       - name: Wait for benchmark health

@@ -80,6 +80,15 @@
 
 - **Pixi 环境内未包含 pip，导致运行时安装失败（当前报错）**：改用 `pixi run python -m pip install -r ../benchmark/requirements.txt` 后，CI 报错 `/halligan/.pixi/envs/default/bin/python: No module named pip`。根因：Pixi（基于 Conda）默认不自动安装 `pip`，除非将其声明为依赖。对 CI 来说，在 Pixi 环境内临时用 `pip` 安装运行时依赖是脆弱方案：既要求额外增补 `pip` 包，又引入与 Pixi 解析/缓存体系并行的第二套包管理，增加不确定性。
 
+- **跨平台解析失败（当前报错）— `gunicorn` 在 `win-64` 无可用包**：工作区声明了多平台（含 `win-64`），将 `gunicorn>=23,<24` 纳入 `[tool.pixi.dependencies]` 后，Pixi 需要为所有平台求解默认环境，结果在 `win-64` 上无候选包而失败：
+  
+  ```
+  Error:   × failed to solve requirements of environment 'default' for platform 'win-64'
+    ╰─▶ Cannot solve the request because of: No candidates were found for gunicorn >=23.0.0,<24.
+  ```
+  
+  根因：`gunicorn` 不支持 Windows/在 conda-forge 上无 `win-64` 构建；一旦出现在“默认环境”的通用依赖中，求解会在 Windows 平台上必然失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。
