@@ -50,6 +50,8 @@ def test_benchmark():
     Verify that the containerized Playwright browser can access and load 
     the benchmark application successfully.
     """
+    if not BROWSER_URL or not BENCHMARK_URL:
+        pytest.skip("BROWSER_URL/BENCHMARK_URL not set; skipping benchmark test.")
     with sync_playwright() as p:
         browser = p.chromium.connect(BROWSER_URL)
         context = browser.new_context(viewport={"width": 1344, "height": 768})
@@ -77,6 +79,8 @@ def test_captchas(captcha, sample_id):
     a distinct endpoint. This test ensures that each endpoint is reachable 
     and returns the expected content.
     """
+    if not BROWSER_URL or not BENCHMARK_URL:
+        pytest.skip("BROWSER_URL/BENCHMARK_URL not set; skipping CAPTCHA tests.")
     with sync_playwright() as p:
         browser = p.chromium.connect(BROWSER_URL)
         context = browser.new_context(viewport={"width": 1344, "height": 768})
