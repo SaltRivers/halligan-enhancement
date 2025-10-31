@@ -67,7 +67,10 @@
 
 - **集成测试未配置外部环境变量导致大面积失败（当前报错）**：`integration` 作业在默认环境下未设置 `BROWSER_URL`/`BENCHMARK_URL`，但 `test_benchmark` 与所有 `test_captchas[...]` 在缺少兜底跳过逻辑时仍尝试 `p.chromium.connect(BROWSER_URL)`，触发 `ws_endpoint: expected string, got undefined` 并导致 27 个用例失败。该问题属于回归：此前建议的 `pytest.skip(...)` 兜底被移除，导致集成测试在未配置外部依赖时不再自动跳过。
 
-- **Benchmark 服务引用不存在的模块导致 Gunicorn 无法启动（当前报错）**：`benchmark/server.py` 在导入阶段执行 `from apis.arkose import arkose`、`from apis.lemin import lemin`、`from apis.tencent import tencent`、`from apis.yandex import yandex`，但仓库仅包含 `benchmark/apis/{amazon,baidu,botdetect,geetest,hcaptcha,mtcaptcha,recaptchav2}`，缺少上述四个提供方目录与蓝图。Gunicorn 在加载 WSGI 应用时抛出 `ModuleNotFoundError: No module named 'apis.arkose'`，导致 worker 无法启动、容器健康检查失败、CI 集成作业中止。
+- **Benchmark 服务提供方目录缺失导致端点长期 404（当前报错）**：`benchmark/server.py` 在导入阶段执行 `from .apis.arkose import arkose`、`from .apis.lemin import lemin`、`from .apis.tencent import tencent`、`from .apis.yandex import yandex`。由于仓库未提交这些提供方目录，GitHub Actions 的工作空间只有 `benchmark/apis/{amazon,baidu,botdetect,geetest,hcaptcha,mtcaptcha,recaptchav2}`。
+  - 服务在启动时捕获 `ModuleNotFoundError` 并输出 `WARNING:root:Optional API 'arkose' not available; skipping registration.` 等日志，导致全部相关蓝图未注册。
+  - 集成作业的 `test_captcha_endpoints_http` 对 14 条样本路由连续收到 404（`lemin/19`、`arkose/...`、`tencent/13`、`yandex/...`），直接触发失败；随后 Playwright 测试也因页面缺失被跳过。
+  - 根因：仓库缺少 `benchmark/apis/{arkose,lemin,tencent,yandex}` 目录及其模板、静态资源与挑战数据，CI 环境无法还原完整基准服务，导致 HTTP 预检和前端渲染均无法通过。
 
 - **测试样本与可用路由不一致**：`halligan/samples.py` 中包含 `arkose/*`、`lemin`、`tencent`、`yandex/*` 等样本，但 Benchmark 实际未提供对应路由，`test_captchas` 在访问这些端点时将得到 404，缺少兜底跳过会引发集成测试失败。
 
