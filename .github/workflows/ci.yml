@@ -141,7 +141,7 @@ jobs:
       - name: Export service endpoints
         run: |
           echo "BROWSER_URL=ws://127.0.0.1:5000/" >> $GITHUB_ENV
-          echo "BENCHMARK_URL=http://127.0.0.1:3334" >> $GITHUB_ENV
+          echo "BENCHMARK_URL=http://host.docker.internal:3334" >> $GITHUB_ENV
 
       - name: Wait for browser health
         run: |
@@ -181,7 +181,7 @@ jobs:
         run: |
           set -euo pipefail
           # Start benchmark server in background, fully detached from this shell
-          (setsid pixi run waitress-serve --listen=127.0.0.1:3334 benchmark.server:app > /tmp/benchmark.out 2>&1 & echo $! > /tmp/benchmark.pid) || true
+          (setsid pixi run waitress-serve --listen=0.0.0.0:3334 benchmark.server:app > /tmp/benchmark.out 2>&1 & echo $! > /tmp/benchmark.pid) || true
 
           # Wait for benchmark health
           for i in {1..90}; do
