@@ -76,6 +76,8 @@
 
 - **浏览器健康检查方式错误（当前报错）**：CI 中对浏览器容器的探活使用了 `curl http://127.0.0.1:5000/ | grep 'playwright'` 的 HTTP 内容检查，但 `mcr.microsoft.com/playwright` 的 `run-server` 只暴露 WebSocket 端点（`ws://127.0.0.1:5000/`），根路径 HTTP 不返回标识内容，导致探活一致失败并报 `Browser not healthy`，容器日志却显示 `Listening on ws://0.0.0.0:5000/`。此外，导出的 `BROWSER_URL` 带有多余的查询参数 `?ws=1`，与实际端点不匹配，增加连接不确定性。
 
+- **Pixi 环境激活方式错误导致找不到激活脚本（当前报错）**：在集成作业中通过 `. halligan/.pixi/envs/default/bin/activate` 试图“激活” Pixi 环境以安装 `benchmark/requirements.txt` 并启动 Gunicorn。Pixi 的环境不是 Python `virtualenv`，不会提供该路径下的 `bin/activate` 脚本，因此步骤报错 `No such file or directory` 并中止。正确做法是使用 `pixi run <cmd>` 在 Pixi 环境中执行命令，配合步骤的 `working-directory: halligan` 保证命令在项目环境内运行。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

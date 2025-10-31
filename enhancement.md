@@ -82,6 +82,12 @@
 - **纠正浏览器端点与环境变量**：
   - 将 `BROWSER_URL` 修正为 `ws://127.0.0.1:5000/`，移除无必要的 `?ws=1` 参数，使 `p.chromium.connect(BROWSER_URL)` 与 `run-server` 的实际监听端点一致。
 
+- **用 Pixi 原生命令替代手动激活（修复激活脚本缺失）**：
+  - 在 CI 集成作业中移除对 `halligan/.pixi/envs/default/bin/activate` 的依赖，改为：
+    - 安装运行时依赖：在 `working-directory: halligan` 下执行 `pixi run python -m pip install -r ../benchmark/requirements.txt`。
+    - 启动基准服务：在 `working-directory: halligan` 下执行 `nohup pixi run gunicorn --bind=0.0.0.0:3334 --threads=10 benchmark.server:app &`。
+  - 这样所有命令都在 Pixi 环境中执行，但无需依赖不存在的 `bin/activate` 脚本，提升可移植性与稳健性。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
