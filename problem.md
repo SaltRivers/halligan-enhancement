@@ -12,6 +12,8 @@
 
 - **CI 中 `pixi install --locked` 失败（动作默认行为）**：`setup-pixi` 会在安装阶段使用 `--locked`，当锁文件与 `pyproject.toml` 不一致或存在无效依赖时直接退出。当前 `halligan/pyproject.toml` 声明了 `clip` 的本地可编辑依赖 `./halligan/models/CLIP`，但仓库内不存在该目录，导致解析失败，进而使 `pixi install --locked` 返回非零退出码。
 
+- **CI 中 setup-pixi 缓存报错（Cannot cache without running install）**：当 `with.cache: true` 且 `run-install: false` 同时设置时，动作无法执行安装以生成/恢复缓存，于主步骤与 Post Job 清理阶段均会报 `Error: Cannot cache without running install`，从而使任务失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。
