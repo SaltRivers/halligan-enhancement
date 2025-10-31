@@ -28,7 +28,7 @@
 
 - **避免动作内的锁定安装失败**：为 `setup-pixi` 增加 `run-install: false`，改由后续步骤执行显式 `pixi install -p ./halligan`，从而避免动作默认的 `pixi install --locked` 在锁文件失配时直接失败。
  
- - **启用动作安装以支持缓存**：将 `setup-pixi` 的 `run-install` 设置为 `true`（保留 `cache: true` 与 `manifest-path: halligan/pyproject.toml`），让动作在安装阶段正确恢复与写入缓存，避免 `Cannot cache without running install` 报错。
+- **让安装在我们控制下进行，绕过动作的 `--locked` 失败**：将 `setup-pixi` 的 `run-install` 改为 `false` 且关闭 `cache`（`cache: false`），避免动作内部强制执行 `pixi install --locked`。依赖安装改为后续显式步骤 `pixi install -p ./halligan`，以便在锁文件暂未更新时仍可解析成功并继续执行工作流。
 
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 

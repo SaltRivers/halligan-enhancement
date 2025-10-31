@@ -53,8 +53,8 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.8.1
         with:
           manifest-path: halligan/pyproject.toml
-          cache: true
-          run-install: true
+          cache: false
+          run-install: false
 
       - name: Restore models cache
         uses: actions/cache/restore@v4
@@ -127,8 +127,8 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.8.1
         with:
           manifest-path: halligan/pyproject.toml
-          cache: true
-          run-install: true
+          cache: false
+          run-install: false
 
       - name: Restore models cache
         uses: actions/cache/restore@v4

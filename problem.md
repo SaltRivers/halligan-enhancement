@@ -10,7 +10,17 @@
 
 - **CI 中 Pixi 设置寻找错误位置导致缓存与清理失败（当前报错）**：`prefix-dev/setup-pixi@v0.8.1` 在仓库根目录默认查找 `pixi.toml`/`pixi.lock`，而项目的 Pixi 清单位于 `halligan/pyproject.toml`，锁文件为 `halligan/pixi.lock`。由于未显式指定清单路径，动作在生成缓存键时报错 `ENOENT: no such file or directory, open 'pixi.lock'`，并在 Post Job 阶段因缺失工作目录 `.pixi` 再次报错 `lstat '.pixi'`，导致 `lint-and-test` 任务早期失败。
 
-- **CI 中 `pixi install --locked` 失败（动作默认行为）**：`setup-pixi` 会在安装阶段使用 `--locked`，当锁文件与 `pyproject.toml` 不一致或存在无效依赖时直接退出。当前 `halligan/pyproject.toml` 声明了 `clip` 的本地可编辑依赖 `./halligan/models/CLIP`，但仓库内不存在该目录，导致解析失败，进而使 `pixi install --locked` 返回非零退出码。
+- **CI 中 `pixi install --locked` 失败（动作默认行为）**：`setup-pixi` 会在安装阶段使用 `--locked`，当锁文件与 `pyproject.toml` 不一致或存在无效依赖时直接退出。虽然已移除无效的本地依赖，但由于我们近期调整了 `pyproject.toml`（平台、依赖与开发工具），仓库中的 `halligan/pixi.lock` 仍为旧版本，导致 `setup-pixi` 在强制锁定安装阶段失败，日志为：
+
+  ```
+  Run prefix-dev/setup-pixi@v0.8.1
+  Downloading Pixi
+  Restoring pixi cache
+  pixi install --locked
+  Error: The process '/home/runner/.pixi/bin/pixi' failed with exit code 1
+  ```
+
+  该失败发生在动作自身步骤内，先于我们后续显式的 `pixi install -p ./halligan` 步骤，因此工作流提前中止。
 
 - **CI 中 setup-pixi 缓存报错（Cannot cache without running install）**：当 `with.cache: true` 且 `run-install: false` 同时设置时，动作无法执行安装以生成/恢复缓存，于主步骤与 Post Job 清理阶段均会报 `Error: Cannot cache without running install`，从而使任务失败。
 
