@@ -33,8 +33,7 @@ mypy = ">=1.10.0,<2"
 isort = ">=5.13.0,<6"
 pre-commit = ">=3.7.0,<4"
 
-[tool.pixi.pypi-dependencies]
-clip = { path = "./halligan/models/CLIP", editable = true }
+ 
 
 [tool.pixi.feature.cuda]
 system-requirements = {cuda = "12.1"}

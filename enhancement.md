@@ -26,6 +26,10 @@
 
 - **修复 Pixi 设置与缓存失败**：在 CI 的 `setup-pixi` 步骤中显式指定 `manifest-path: halligan/pyproject.toml`，使动作在 `halligan/` 目录下解析 `pixi.lock` 并建立缓存，避免默认在仓库根查找导致的 `ENOENT: open 'pixi.lock'` 与清理阶段 `lstat '.pixi'` 错误。
 
+- **避免动作内的锁定安装失败**：为 `setup-pixi` 增加 `run-install: false`，改由后续步骤执行显式 `pixi install -p ./halligan`，从而避免动作默认的 `pixi install --locked` 在锁文件失配时直接失败。
+
+- **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
+
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。
 
 - 引入 `pre-commit` 钩子与 CI 质量门禁（格式化、lint、类型检查、单元测试）。

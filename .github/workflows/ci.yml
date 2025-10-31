@@ -54,6 +54,7 @@ jobs:
         with:
           manifest-path: halligan/pyproject.toml
           cache: true
+          run-install: false
 
       - name: Restore models cache
         uses: actions/cache/restore@v4
@@ -127,6 +128,7 @@ jobs:
         with:
           manifest-path: halligan/pyproject.toml
           cache: true
+          run-install: false
 
       - name: Restore models cache
         uses: actions/cache/restore@v4
