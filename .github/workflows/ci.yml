@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - 'README.md'
+      - 'examples/**'
+      - '**/*.ipynb'
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'examples/**'
+      - '**/*.ipynb'
+  workflow_dispatch:
+    inputs:
+      run_integration:
+        description: 'Run integration tests (requires services)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false','true']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    outputs:
+      integration: ${{ steps.integration_filter.outputs.integration }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect integration-impacting changes
+        id: integration_filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            integration:
+              - 'docker-compose.yml'
+              - 'Makefile'
+              - 'halligan/**'
+              - 'benchmark/**'
+              - '.github/workflows/**'
+
+      - name: Set up Pixi (with cache)
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          cache: true
+
+      - name: Restore models cache
+        uses: actions/cache/restore@v4
+        with:
+          path: halligan/.cache/models
+          key: models-${{ hashFiles('halligan/get_models.sh') }}
+          restore-keys: |
+            models-
+
+      - name: Install deps (CPU)
+        run: pixi install -p ./halligan
+
+      - name: Run pre-commit
+        run: pixi run -p ./halligan precommit
+
+      - name: Run unit tests (skip integration) with JUnit
+        run: |
+          mkdir -p halligan/test-results
+          pixi run -p ./halligan pytest -m 'not integration' --junitxml=halligan/test-results/junit.xml -vv
+        continue-on-error: false
+
+      - name: Save models cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: halligan/.cache/models
+          key: models-${{ hashFiles('halligan/get_models.sh') }}
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: halligan/test-results
+          if-no-files-found: ignore
+
+      - name: Upload logs if present
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            halligan/**/*.log
+            **/.pytest_cache/**
+          if-no-files-found: ignore
+
+  integration:
+    if: >-
+      ${{ inputs.run_integration == 'true' ||
+          (github.event_name == 'push' &&
+           needs.lint-and-test.outputs.integration == 'true') ||
+          (github.event_name == 'pull_request' &&
+           (contains(github.event.pull_request.labels.*.name, 'run-integration') ||
+            needs.lint-and-test.outputs.integration == 'true')) }}
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and start services
+        run: |
+          docker compose up -d --build
+          # Allow services to warm up
+          sleep 10
+
+      - name: Set up Pixi (with cache)
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          cache: true
+
+      - name: Restore models cache
+        uses: actions/cache/restore@v4
+        with:
+          path: halligan/.cache/models
+          key: models-${{ hashFiles('halligan/get_models.sh') }}
+          restore-keys: |
+            models-
+
+      - name: Install deps (CPU)
+        run: pixi install -p ./halligan
+
+      - name: Run integration tests
+        run: |
+          mkdir -p halligan/test-results
+          pixi run -p ./halligan pytest -m integration --junitxml=halligan/test-results/junit-integration.xml -vv
+
+      - name: Upload integration results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-integration
+          path: halligan/test-results
+          if-no-files-found: ignore
