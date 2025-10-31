@@ -14,6 +14,7 @@ from samples import SAMPLES
 load_dotenv()
 BROWSER_URL = os.getenv("BROWSER_URL")
 BENCHMARK_URL = os.getenv("BENCHMARK_URL")
+BENCHMARK_HTTP_URL = os.getenv("BENCHMARK_HTTP_URL", BENCHMARK_URL)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
@@ -75,13 +76,13 @@ test_captcha_params = [(name, data["id"]) for name, data in SAMPLES.items()]
 def test_captcha_endpoints_http():
     """Ensure each CAPTCHA endpoint responds with HTTP 200 before UI checks."""
 
-    if not BENCHMARK_URL:
-        pytest.skip("BENCHMARK_URL not set; skipping endpoint availability check.")
+    if not BENCHMARK_HTTP_URL:
+        pytest.skip("BENCHMARK_HTTP_URL not set; skipping endpoint availability check.")
 
     failures: list[str] = []
     for captcha, data in SAMPLES.items():
         sample_id = data["id"]
-        url = f"{BENCHMARK_URL}/{captcha}/{sample_id}"
+        url = f"{BENCHMARK_HTTP_URL}/{captcha}/{sample_id}"
         try:
             with urllib_request.urlopen(url, timeout=15) as resp:
                 status = resp.getcode()

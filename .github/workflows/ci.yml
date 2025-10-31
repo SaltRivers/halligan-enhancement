@@ -142,6 +142,7 @@ jobs:
         run: |
           echo "BROWSER_URL=ws://127.0.0.1:5000/" >> $GITHUB_ENV
           echo "BENCHMARK_URL=http://host.docker.internal:3334" >> $GITHUB_ENV
+          echo "BENCHMARK_HTTP_URL=http://127.0.0.1:3334" >> $GITHUB_ENV
 
       - name: Wait for browser health
         run: |

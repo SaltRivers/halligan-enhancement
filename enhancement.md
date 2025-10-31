@@ -83,6 +83,10 @@
 - **纠正浏览器端点与环境变量**：
   - 将 `BROWSER_URL` 修正为 `ws://127.0.0.1:5000/`，移除无必要的 `?ws=1` 参数，使 `p.chromium.connect(BROWSER_URL)` 与 `run-server` 的实际监听端点一致。
 
+- **隔离宿主机与容器使用的基准服务地址（新）**：
+  - 集成工作流额外导出 `BENCHMARK_HTTP_URL=http://127.0.0.1:3334`，供宿主机上的 `test_captcha_endpoints_http` 进行直接 HTTP 预检，同时保留 `BENCHMARK_URL=http://host.docker.internal:3334` 供 Playwright 浏览器容器访问。
+  - `basic_test.py::test_captcha_endpoints_http` 默认读取 `BENCHMARK_HTTP_URL`（回退到 `BENCHMARK_URL`），避免宿主机解析 `host.docker.internal` 失败的报错。
+
 - **将基准服务依赖归并到 Pixi 环境，移除 pip 安装步骤（跨平台可解）**：
   - 在 `halligan/pyproject.toml` 的 `[tool.pixi.dependencies]` 中新增 `flask>=3.0.2,<3.1` 与 `waitress>=2.1.2,<3`（替代不支持 Windows 的 `gunicorn`），使运行基准服务所需依赖由 Pixi 统一管理、可在 `linux-64`/`osx-64`/`osx-arm64`/`win-64` 解析。
   - 从 CI 工作流中移除 `pixi run python -m pip install -r ../benchmark/requirements.txt` 步骤；直接使用 `pixi run waitress-serve --listen=0.0.0.0:3334 benchmark.server:app` 启动服务。

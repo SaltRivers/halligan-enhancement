@@ -98,6 +98,8 @@
 
 - **Playwright 容器无法访问基准服务（当前报错）**：`integration` 作业在主机上启动 Waitress 并监听 `127.0.0.1:3334`，同时 Playwright 浏览器运行在 Docker 容器中。测试用例在容器里执行 `page.goto("http://127.0.0.1:3334/..." )`，但容器内的 `127.0.0.1` 指向容器自身，导致所有请求出现 `net::ERR_CONNECTION_REFUSED`，即便 Waitress 日志显示“Serving on http://127.0.0.1:3334”。
   - 根因：服务绑定仅限回环地址且未向容器暴露主机网络；同时 `BENCHMARK_URL` 环境变量指向 `127.0.0.1`，使 Playwright 无法解析到宿主机。
+- **主机侧 HTTP 预检使用 `host.docker.internal` 导致解析失败（当前报错）**：为解决上述容器访问问题，我们在 CI 中将 `BENCHMARK_URL` 设置为 `http://host.docker.internal:3334`。然而 `test_captcha_endpoints_http` 是在宿主机上执行的 Python 预检，用 `urllib` 直接访问该地址。在 GitHub Linux runner 上 `host.docker.internal` 默认不存在，`socket.getaddrinfo` 返回 `Name or service not known`，导致用例失败并提前终止集成测试。
+  - 根因：浏览器（容器内）与宿主机共享同一个 `BENCHMARK_URL`，缺少对宿主机解析的独立配置；应为两类客户端提供各自可到达的地址。
 
 ### 其他关键问题（简述）
 
