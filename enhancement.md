@@ -67,6 +67,10 @@
 - **集成测试与路由实际可用性对齐**：
   - 在 `test_captchas` 中对 `page.goto(...)` 的响应进行预检，当响应为空或 `status != 200` 时以 `pytest.skip(...)` 处理，避免因样本覆盖了尚未实现的路由而导致测试失败。
 
+- **修复 Playwright 生命周期管理，消除事件循环关闭错误**：
+  - 将 `basic_test.py::test_captchas` 的页面导航与交互全部置于 `with sync_playwright()` 作用域内，修正缩进错误，确保 Playwright 未被提前关闭时再进行 `goto()` 与后续操作。
+  - 为该用例增加 `finally: browser.close()`，在任何情况下都正确释放浏览器资源，避免资源泄漏与后续用例串扰。
+
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 
 - 针对 Ruff 的 `unresolved-import` 告警，确认在标准环境安装 `python-dotenv` 与 `playwright` 是否可消除，若仍存在则评估在 Ruff 配置中以 `per-file-ignores` 或 `typing-modules` 方式进行豁免。

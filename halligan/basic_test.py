@@ -83,41 +83,53 @@ def test_captchas(captcha, sample_id):
         pytest.skip("BROWSER_URL/BENCHMARK_URL not set; skipping CAPTCHA tests.")
     with sync_playwright() as p:
         browser = p.chromium.connect(BROWSER_URL)
-        context = browser.new_context(viewport={"width": 1344, "height": 768})
-        page = context.new_page()
-    response = page.goto(f"{BENCHMARK_URL}/{captcha}/{sample_id}")
-    if response is None or response.status != 200:
-        pytest.skip(f"Endpoint not available for {captcha}/{sample_id}: status={getattr(response, 'status', None)}")
+        try:
+            context = browser.new_context(viewport={"width": 1344, "height": 768})
+            page = context.new_page()
+            response = page.goto(f"{BENCHMARK_URL}/{captcha}/{sample_id}")
+            if response is None or response.status != 200:
+                pytest.skip(
+                    f"Endpoint not available for {captcha}/{sample_id}: status={getattr(response, 'status', None)}"
+                )
 
-        if "recaptchav2" in captcha:
-            checkbox = page.frame_locator("#checkbox")
-            checkbox.locator("#recaptcha-anchor").click()
-            page.wait_for_timeout(2000)
-        elif "hcaptcha" in captcha:
-            checkbox = page.frame_locator("#checkbox")
-            checkbox.locator("#anchor").click()
-            page.wait_for_timeout(2000)
-        elif "arkose" in captcha:
-            frame = page.frame_locator("#funcaptcha")
-            frame.locator(".start-button").click()
-        elif "mtcaptcha" in captcha:
-            page.wait_for_timeout(2000)
+            if "recaptchav2" in captcha:
+                checkbox = page.frame_locator("#checkbox")
+                checkbox.locator("#recaptcha-anchor").click()
+                page.wait_for_timeout(2000)
+            elif "hcaptcha" in captcha:
+                checkbox = page.frame_locator("#checkbox")
+                checkbox.locator("#anchor").click()
+                page.wait_for_timeout(2000)
+            elif "arkose" in captcha:
+                frame = page.frame_locator("#funcaptcha")
+                frame.locator(".start-button").click()
+            elif "mtcaptcha" in captcha:
+                page.wait_for_timeout(2000)
 
-        # Get snapshot of main frame
-        full_snapshot = [page.locator("body").aria_snapshot()]
+            # Get snapshot of main frame
+            full_snapshot = [page.locator("body").aria_snapshot()]
 
-        # Get all iframe elements
-        iframes = page.locator("iframe")
-        iframe_count = iframes.count()
+            # Get all iframe elements
+            iframes = page.locator("iframe")
+            iframe_count = iframes.count()
 
-        # Loop through each iframe and collect its ARIA snapshot
-        for i in range(iframe_count):
-            frame = iframes.nth(i).content_frame
-            if frame:
-                iframe_snapshot = frame.locator("body").aria_snapshot()
-                full_snapshot.append(iframe_snapshot)
+            # Loop through each iframe and collect its ARIA snapshot
+            for i in range(iframe_count):
+                frame = iframes.nth(i).content_frame
+                if frame:
+                    iframe_snapshot = frame.locator("body").aria_snapshot()
+                    full_snapshot.append(iframe_snapshot)
 
-        assert SequenceMatcher(None, "\\n".join(full_snapshot), open(f"./snapshots/{captcha.replace("/", "_")}.txt").read()).ratio() > 0.5
+            assert SequenceMatcher(
+                None,
+                "\n".join(full_snapshot),
+                open(f"./snapshots/{captcha.replace("/", "_")}.txt").read(),
+            ).ratio() > 0.5
+        finally:
+            try:
+                browser.close()
+            except Exception:
+                pass
 
 
 @pytest.mark.integration

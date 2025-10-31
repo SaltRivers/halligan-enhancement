@@ -70,6 +70,8 @@
 
 - **测试样本与可用路由不一致**：`halligan/samples.py` 中包含 `arkose/*`、`lemin`、`tencent`、`yandex/*` 等样本，但 Benchmark 实际未提供对应路由，`test_captchas` 在访问这些端点时将得到 404，缺少兜底跳过会引发集成测试失败。
 
+- **Playwright 事件循环提前关闭（当前报错）**：`basic_test.py::test_captchas` 中 `page.goto(...)` 与后续页面交互在 `with sync_playwright() as p:` 代码块之外执行（缩进错误），导致上下文提前退出并关闭 Playwright 的同步事件循环，运行时在 `goto()` 抛出 `Error: Event loop is closed! Is Playwright already stopped?`。根因是测试生命周期管理不当：在关闭 Playwright 后仍使用其对象。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。
