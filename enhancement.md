@@ -26,9 +26,11 @@
 
 - **修复 Pixi 设置与缓存失败**：在 CI 的 `setup-pixi` 步骤中显式指定 `manifest-path: halligan/pyproject.toml`，使动作在 `halligan/` 目录下解析 `pixi.lock` 并建立缓存，避免默认在仓库根查找导致的 `ENOENT: open 'pixi.lock'` 与清理阶段 `lstat '.pixi'` 错误。
 
-- **避免动作内的锁定安装失败**：为 `setup-pixi` 增加 `run-install: false`，改由后续步骤执行显式 `pixi install -p ./halligan`，从而避免动作默认的 `pixi install --locked` 在锁文件失配时直接失败。
+- **避免动作内的锁定安装失败**：为 `setup-pixi` 增加 `run-install: false`，改由后续步骤执行显式 `pixi -p ./halligan install`，从而避免动作默认的 `pixi install --locked` 在锁文件失配时直接失败。
  
-- **让安装在我们控制下进行，绕过动作的 `--locked` 失败**：将 `setup-pixi` 的 `run-install` 改为 `false` 且关闭 `cache`（`cache: false`），避免动作内部强制执行 `pixi install --locked`。依赖安装改为后续显式步骤 `pixi install -p ./halligan`，以便在锁文件暂未更新时仍可解析成功并继续执行工作流。
+- **让安装在我们控制下进行，绕过动作的 `--locked` 失败**：将 `setup-pixi` 的 `run-install` 改为 `false` 且关闭 `cache`（`cache: false`），避免动作内部强制执行 `pixi install --locked`。依赖安装改为后续显式步骤 `pixi -p ./halligan install`，以便在锁文件暂未更新时仍可解析成功并继续执行工作流。
+
+- **修正 pixi CLI 用法（全局参数置于子命令之前）**：将 `pixi install -p ./halligan`、`pixi run -p ./halligan ...` 改为 `pixi -p ./halligan install`、`pixi -p ./halligan run ...`。可选优化：在相关步骤上设置 `working-directory: halligan`，则可直接使用 `pixi install` 与 `pixi run ...`，减少参数重复。
 
 - **移除无效的本地依赖**：删除 `halligan/pyproject.toml` 中 `[tool.pixi.pypi-dependencies]` 下的 `clip = { path = "./halligan/models/CLIP", editable = true }`，该路径在仓库中不存在，会导致安装阶段失败。
 

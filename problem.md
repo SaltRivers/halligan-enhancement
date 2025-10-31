@@ -24,6 +24,17 @@
 
 - **CI 中 setup-pixi 缓存报错（Cannot cache without running install）**：当 `with.cache: true` 且 `run-install: false` 同时设置时，动作无法执行安装以生成/恢复缓存，于主步骤与 Post Job 清理阶段均会报 `Error: Cannot cache without running install`，从而使任务失败。
 
+- **CI 中 pixi CLI 参数顺序错误导致安装失败（当前报错）**：在步骤 `Install deps (CPU)` 中使用了 `pixi install -p ./halligan`，但 `-p/--project` 是 pixi 的全局参数，必须置于子命令之前。错误日志：
+
+  ```
+  Run pixi install -p ./halligan
+  error: unexpected argument '-p' found
+  Usage: pixi install [OPTIONS]
+  Error: Process completed with exit code 2.
+  ```
+
+  因此 `install` 子命令将 `-p` 视为非法参数，导致作业失败。
+
 ### 其他关键问题（简述）
 
 - **版本锁定策略不一致**：部分严格锁定（如 `ultralytics==8.2.51`、`transformers==4.42.4`），部分宽松（`faiss-gpu>=1.9.0,<2`），缺少说明与升级策略，容易出现“升级地雷”。

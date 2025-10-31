@@ -65,15 +65,15 @@ jobs:
             models-
 
       - name: Install deps (CPU)
-        run: pixi install -p ./halligan
+        run: pixi -p ./halligan install
 
       - name: Run pre-commit
-        run: pixi run -p ./halligan precommit
+        run: pixi -p ./halligan run precommit
 
       - name: Run unit tests (skip integration) with JUnit
         run: |
           mkdir -p halligan/test-results
-          pixi run -p ./halligan pytest -m 'not integration' --junitxml=halligan/test-results/junit.xml -vv
+          pixi -p ./halligan run pytest -m 'not integration' --junitxml=halligan/test-results/junit.xml -vv
         continue-on-error: false
 
       - name: Save models cache
@@ -139,12 +139,12 @@ jobs:
             models-
 
       - name: Install deps (CPU)
-        run: pixi install -p ./halligan
+        run: pixi -p ./halligan install
 
       - name: Run integration tests
         run: |
           mkdir -p halligan/test-results
-          pixi run -p ./halligan pytest -m integration --junitxml=halligan/test-results/junit-integration.xml -vv
+          pixi -p ./halligan run pytest -m integration --junitxml=halligan/test-results/junit-integration.xml -vv
 
       - name: Upload integration results
         if: always()
